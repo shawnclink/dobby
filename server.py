@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ThesisGlow Lite — 极简行间翻译服务。
+"""Dobby — 英文生词行间翻译精灵。
 
 Chrome Extension 后端 + Web App 服务器。
 生词预判 + 语境中文释义 + 词汇记忆 + PDF 文本提取。
@@ -187,7 +187,7 @@ def main():
         port = int(sys.argv[2])
 
     server = HTTPServer(("127.0.0.1", port), Handler)
-    print(f"🧠 ThesisGlow Lite → http://localhost:{port}")
+    print(f"🧦 Dobby → http://localhost:{port}")
     print(f"   API:   POST /api/glow")
     print(f"   Health: GET /api/health")
     print(f"   Web:   GET /")

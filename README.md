@@ -1,7 +1,7 @@
-# ThesisGlow Lite — 英文生词行间翻译
+# 🧦 Dobby — 英文生词行间翻译
 
-> 逆向工程 ThesisGlow 核心功能：**自动预判生词 + 行间内嵌中文释义**。
-> 针对 ADHD 阅读者优化 — 不弹窗、不切页、不打断阅读流。
+> 像家养小精灵 Dobby 一样，默默帮你读懂英文，不打扰、不弹窗。
+> 针对 ADHD 阅读者优化。
 
 ## ✨ 三大功能
 
@@ -14,7 +14,7 @@
 ## 🚀 快速开始
 
 ```bash
-cd ~/thesisglow-lite
+cd ~/dobby
 python3 server.py
 ```
 
@@ -28,14 +28,14 @@ python3 server.py
 1. 打开 `chrome://extensions/`
 2. 开启「开发者模式」
 3. 点「加载已解压的扩展程序」
-4. 选 `~/thesisglow-lite/extension`
+4. 选 `~/dobby/extension`
 5. 浏览任意英文网页 → 悬停段落 → `✨ Glow`
 6. 点扩展图标打开控制面板
 
 ## 🏗 项目结构
 
 ```
-thesisglow-lite/
+dobby/
 ├── server.py              # Python 后端（stdlib only）
 ├── index.html             # Web App（PDF + 词汇记忆 + 多水平）
 ├── extension/             # Chrome 扩展
@@ -85,9 +85,9 @@ DeepSeek API（System Prompt 定义生词筛选规则）
 - 默认半透明（opacity 0.45），hover 变清晰
 - 无动画、无弹窗、无闪烁、无强制交互
 
-## 📋 自定义
+## 📋 名字由来
 
-编辑 `server.py` 里的 `SYSTEM_PROMPT` 调整标注策略。
+Dobby — 哈利波特里的家养小精灵。默默帮人不求回报，拿只袜子就自由了。跟这个工具一样：帮你读懂英文，不弹窗不打断，完事默默退到一边。
 
 ## 📄 License
 

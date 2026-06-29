@@ -1,4 +1,4 @@
-// ThesisGlow Lite · Background Service Worker
+// Dobby · Background Service Worker
 // 职责：API 代理 + 词汇记忆 + 状态管理
 
 const API_BASE = 'http://localhost:8848';

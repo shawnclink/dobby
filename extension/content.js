@@ -1,4 +1,4 @@
-// ThesisGlow Lite · Content Script
+// Dobby · Content Script
 // 职责：扫描页面英文文本块 + 触发 Glow + 渲染行间翻译
 
 let autoScanEnabled = false;
@@ -103,7 +103,7 @@ async function glowBlock(el, btn) {
       btn.textContent = '✗ Retry';
       btn.classList.remove('tgl-loading');
     }
-    console.error('ThesisGlow:', err.message);
+    console.error('Dobby:', err.message);
   }
 }
 

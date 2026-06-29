@@ -1,4 +1,4 @@
-// ThesisGlow Lite · Popup Controller
+// Dobby · Popup Controller
 
 const els = {
   serverDot: () => document.getElementById('serverDot'),
@@ -27,7 +27,7 @@ async function checkServer() {
     }
   } catch (e) {
     els.serverDot().className = 'status-dot offline';
-    els.serverText().textContent = 'Server not running — cd ~/thesisglow-lite && python3 server.py';
+    els.serverText().textContent = 'Server not running — cd ~/dobby && python3 server.py';
   }
 }
 

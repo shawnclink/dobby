@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ThesisGlow Lite",
+  "name": "Dobby",
   "version": "1.0.0",
   "description": "英文生词行间翻译 — 不弹窗、不切页、不打断阅读流。ADHD 友好。",
   "icons": {
@@ -23,7 +23,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ThesisGlow Lite"
+    "default_title": "Dobby"
   },
   "web_accessible_resources": [
     {
