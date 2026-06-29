@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThesisGlow Lite — 行间翻译</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --surface: #2a2a2a;
+    --border: #3a3a3a;
+    --text: #c8c8c8;
+    --text-dim: #888;
+    --accent: #6a9955;
+    --accent-hover: #7eb865;
+    --glow: #8b7e6a;
+    --radius: 8px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+    line-height: 1.6;
+  }
+  .app { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 20px; }
+
+  header {
+    display: flex; align-items: baseline; gap: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 20px; font-weight: 600; color: #ddd; }
+  header span { font-size: 12px; color: var(--text-dim); }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    padding: 8px 18px; font-size: 13px; font-family: inherit;
+    background: transparent; color: var(--text-dim); border: 1px solid transparent;
+    border-radius: var(--radius) var(--radius) 0 0; cursor: pointer;
+  }
+  .tab.active { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* ── Input ── */
+  textarea {
+    width: 100%; min-height: 220px; padding: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 0 var(--radius) var(--radius); color: var(--text);
+    font-size: 15px; line-height: 1.8; resize: vertical; outline: none;
+  }
+  textarea:focus { border-color: #555; }
+  textarea::placeholder { color: #555; }
+
+  /* ── PDF Drop ── */
+  .pdf-zone {
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 220px; background: var(--surface); border: 2px dashed var(--border);
+    border-radius: 0 0 var(--radius) var(--radius); cursor: pointer; gap: 8px;
+    transition: border-color 0.2s;
+  }
+  .pdf-zone.active { display: flex; }
+  .pdf-zone:hover, .pdf-zone.drag { border-color: var(--accent); }
+  .pdf-zone .icon { font-size: 36px; opacity: 0.6; }
+  .pdf-zone .text { font-size: 14px; color: var(--text-dim); }
+  .pdf-zone .sub { font-size: 11px; color: #555; }
+  .pdf-zone input[type=file] { display: none; }
+  .pdf-name { font-size: 13px; color: var(--accent); margin-top: 4px; }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .btn {
+    padding: 10px 24px; border: none; border-radius: var(--radius);
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #1e1e1e; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .btn-ghost:hover:not(:disabled) { border-color: #555; color: var(--text); }
+
+  select {
+    padding: 8px 12px; font-size: 13px; font-family: inherit;
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    border-radius: var(--radius); outline: none; cursor: pointer;
+  }
+  .status { font-size: 12px; color: var(--text-dim); }
+
+  /* ── Vocab Panel ── */
+  .vocab-panel {
+    display: none; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px; font-size: 12px;
+  }
+  .vocab-panel.visible { display: block; }
+  .vocab-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+  .vocab-stat { color: var(--text-dim); }
+  .vocab-stat strong { color: var(--text); }
+
+  /* ── Output ── */
+  .output-area {
+    display: none; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px 24px; min-height: 120px;
+  }
+  .output-area.visible { display: block; }
+  .output-empty { color: var(--text-dim); font-size: 14px; text-align: center; padding: 40px 0; }
+
+  .glow-paragraph {
+    font-size: 16px; line-height: 2.4; color: #d4d4d4; word-wrap: break-word;
+  }
+  .glow-word { position: relative; display: inline; cursor: default; }
+  .glow-word .glow-trans {
+    display: block; font-size: 11px; line-height: 1.3; color: #a09080;
+    opacity: 0.45; transition: opacity 0.2s; pointer-events: none; user-select: none;
+    margin-bottom: -2px; letter-spacing: 0.3px;
+  }
+  .glow-word:hover .glow-trans { opacity: 0.85; }
+
+  .stats {
+    display: none; font-size: 12px; color: var(--text-dim); padding-top: 4px;
+  }
+  .stats.visible { display: block; }
+
+  .error {
+    display: none; color: #c97a7a; font-size: 13px; padding: 12px;
+    background: rgba(201, 122, 122, 0.08); border-radius: var(--radius);
+  }
+  .error.visible { display: block; }
+
+  @media (max-width: 600px) {
+    body { padding: 12px 8px; }
+    .output-area { padding: 16px 12px; }
+    .glow-paragraph { font-size: 15px; line-height: 2.2; }
+    .glow-trans { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🧠 ThesisGlow Lite</h1>
+    <span>行间翻译 · PDF · 词汇记忆 · ADHD友好</span>
+  </header>
+
+  <!-- ── Tabs ── -->
+  <div class="tabs">
+    <button class="tab active" data-tab="text">📝 粘贴文本</button>
+    <button class="tab" data-tab="pdf">📄 上传 PDF</button>
+  </div>
+
+  <!-- ── Text Input ── -->
+  <textarea id="textInput" placeholder="粘贴英文文本…&#10;&#10;支持段落、文章、论文摘要。Cmd+Enter 快速 Glow。"></textarea>
+
+  <!-- ── PDF Drop Zone ── -->
+  <div class="pdf-zone" id="pdfZone">
+    <span class="icon">📄</span>
+    <span class="text">拖拽 PDF 到此处，或点击选择</span>
+    <span class="sub">支持英文 PDF 论文、文章（最大 50MB）</span>
+    <span class="pdf-name" id="pdfName"></span>
+    <input type="file" id="pdfInput" accept=".pdf,application/pdf">
+  </div>
+
+  <!-- ── Controls ── -->
+  <div class="controls">
+    <button class="btn btn-primary" id="glowBtn">✨ Glow</button>
+    <button class="btn btn-ghost" id="clearBtn">清空</button>
+    <select id="levelSelect">
+      <option value="beginner">Beginner — 多标词</option>
+      <option value="intermediate" selected>Intermediate — 适中</option>
+      <option value="advanced">Advanced — 只标难词</option>
+    </select>
+    <button class="btn btn-ghost" id="vocabToggle" style="font-size:12px;">📊 词汇记忆</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <!-- ── Vocab Panel ── -->
+  <div class="vocab-panel" id="vocabPanel">
+    <div class="vocab-row">
+      <span class="vocab-stat">总词汇: <strong id="vTotal">0</strong></span>
+      <span class="vocab-stat">已知: <strong id="vKnown">0</strong></span>
+      <span class="vocab-stat">学习中: <strong id="vLearning">0</strong></span>
+    </div>
+    <button class="btn btn-ghost" id="resetVocabBtn" style="font-size:11px;padding:4px 12px;">🗑 重置词汇数据</button>
+  </div>
+
+  <!-- ── Error / Stats ── -->
+  <div class="error" id="error"></div>
+  <div class="stats" id="stats"></div>
+
+  <!-- ── Output ── -->
+  <div class="output-area" id="output">
+    <div class="output-empty" id="outputEmpty">👆 粘贴英文文本或上传 PDF，点 Glow 开始</div>
+    <div class="glow-paragraph" id="glowText"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let activeTab = 'text';
+let pdfText = '';
+let vocab = {}; // {word: {seen, lastSeen, status}}
+
+// ── DOM refs ──
+const $ = id => document.getElementById(id);
+const els = {
+  tabs: document.querySelectorAll('.tab'),
+  textInput: $('textInput'),
+  pdfZone: $('pdfZone'),
+  pdfInput: $('pdfInput'),
+  pdfName: $('pdfName'),
+  glowBtn: $('glowBtn'),
+  clearBtn: $('clearBtn'),
+  levelSelect: $('levelSelect'),
+  vocabToggle: $('vocabToggle'),
+  vocabPanel: $('vocabPanel'),
+  vTotal: $('vTotal'),
+  vKnown: $('vKnown'),
+  vLearning: $('vLearning'),
+  resetVocabBtn: $('resetVocabBtn'),
+  error: $('error'),
+  stats: $('stats'),
+  output: $('output'),
+  outputEmpty: $('outputEmpty'),
+  glowText: $('glowText'),
+  status: $('status'),
+};
+
+// ── Tab switching ──
+els.tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    activeTab = tab.dataset.tab;
+    els.tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    if (activeTab === 'text') {
+      els.textInput.style.display = 'block';
+      els.pdfZone.classList.remove('active');
+    } else {
+      els.textInput.style.display = 'none';
+      els.pdfZone.classList.add('active');
+    }
+  });
+});
+
+// ── PDF Upload ──
+els.pdfZone.addEventListener('click', () => els.pdfInput.click());
+
+els.pdfZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  els.pdfZone.classList.add('drag');
+});
+els.pdfZone.addEventListener('dragleave', () => {
+  els.pdfZone.classList.remove('drag');
+});
+els.pdfZone.addEventListener('drop', e => {
+  e.preventDefault();
+  els.pdfZone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handlePDF(file);
+});
+els.pdfInput.addEventListener('change', () => {
+  const file = els.pdfInput.files[0];
+  if (file) handlePDF(file);
+});
+
+async function handlePDF(file) {
+  if (file.size > 50 * 1024 * 1024) {
+    showError('PDF 文件最大 50MB');
+    return;
+  }
+  els.pdfName.textContent = `⏳ 解析中: ${file.name}`;
+  els.status.textContent = '⏳ 解析 PDF…';
+
+  try {
+    const arrayBuf = await file.arrayBuffer();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n\n';
+    }
+    pdfText = fullText.trim();
+    els.pdfName.textContent = `✅ ${file.name} (${pdf.numPages} 页, ${pdfText.split(/\s+/).length} 词)`;
+    els.status.textContent = 'PDF 解析完成';
+  } catch (e) {
+    showError(`PDF 解析失败: ${e.message}`);
+    els.pdfName.textContent = '';
+    els.status.textContent = '';
+  }
+}
+
+function getInputText() {
+  if (activeTab === 'pdf') return pdfText;
+  return els.textInput.value.trim();
+}
+
+// ── Word Memory ──
+const VOCAB_KEY = 'thesisglow_vocabulary';
+
+function loadVocab() {
+  try {
+    const raw = localStorage.getItem(VOCAB_KEY);
+    vocab = raw ? JSON.parse(raw) : {};
+  } catch { vocab = {}; }
+  updateVocabUI();
+}
+
+function saveVocab() {
+  localStorage.setItem(VOCAB_KEY, JSON.stringify(vocab));
+  updateVocabUI();
+}
+
+function updateVocab(annotations) {
+  const now = Date.now();
+  for (const a of annotations) {
+    const word = a.word.toLowerCase();
+    if (vocab[word]) {
+      vocab[word].seen += 1;
+      vocab[word].lastSeen = now;
+      if (vocab[word].seen >= 3 && vocab[word].status === 'learning') {
+        vocab[word].status = 'known';
+      }
+    } else {
+      vocab[word] = { seen: 1, lastSeen: now, status: 'learning' };
+    }
+  }
+  saveVocab();
+}
+
+function getKnownWords() {
+  return Object.entries(vocab)
+    .filter(([, v]) => v.status === 'known')
+    .map(([w]) => w);
+}
+
+function updateVocabUI() {
+  const entries = Object.entries(vocab);
+  const known = entries.filter(([, v]) => v.status === 'known').length;
+  const learning = entries.filter(([, v]) => v.status === 'learning').length;
+  els.vTotal.textContent = entries.length;
+  els.vKnown.textContent = known;
+  els.vLearning.textContent = learning;
+}
+
+// ── Glow ──
+async function doGlow() {
+  const text = getInputText();
+  if (!text) return;
+
+  els.glowBtn.disabled = true;
+  els.status.textContent = '⏳ 分析中…';
+  hideError();
+  els.output.classList.add('visible');
+  els.outputEmpty.style.display = 'none';
+  els.glowText.innerHTML = '';
+
+  try {
+    const knownWords = getKnownWords();
+    const level = els.levelSelect.value;
+
+    const resp = await fetch('/api/glow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, known_words: knownWords, level }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+
+    const annotations = data.annotations || [];
+    renderGlow(text, annotations);
+    updateVocab(annotations);
+
+    const knownFrom = knownWords.filter(w =>
+      annotations.some(a => a.word.toLowerCase() === w.toLowerCase())
+    ).length;
+
+    els.stats.textContent = `标注 ${annotations.length} 个词 · ${text.split(/\s+/).length} 总词数 · 跳过 ${knownFrom} 个已知词`;
+    els.stats.classList.add('visible');
+    els.status.textContent = '✅ 完成';
+
+  } catch (e) {
+    showError(e.message);
+    els.status.textContent = '失败';
+  } finally {
+    els.glowBtn.disabled = false;
+  }
+}
+
+function renderGlow(original, annotations) {
+  const lookup = new Map();
+  for (const a of annotations) {
+    if (a.word && a.translation) lookup.set(a.word.trim(), a.translation.trim());
+  }
+
+  const tokens = tokenize(original);
+  let html = '';
+  for (const token of tokens) {
+    if (token.type === 'word' && lookup.has(token.text)) {
+      html += `<span class="glow-word"><span class="glow-trans">${esc(lookup.get(token.text))}</span>${esc(token.text)}</span>`;
+    } else if (token.type === 'word') {
+      html += esc(token.text);
+    } else {
+      html += token.text;
+    }
+    if (token.type === 'word') lookup.delete(token.text);
+  }
+  els.glowText.innerHTML = html;
+}
+
+function tokenize(text) {
+  const re = /([a-zA-Z]+(?:[''][a-zA-Z]+)?)|([^a-zA-Z]+)/g;
+  const tokens = [];
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[1]) tokens.push({ type: 'word', text: m[1] });
+    else if (m[2]) tokens.push({ type: 'other', text: m[2] });
+  }
+  return tokens;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function showError(msg) {
+  els.error.textContent = `❌ ${msg}`;
+  els.error.classList.add('visible');
+}
+function hideError() { els.error.classList.remove('visible'); }
+
+function doClear() {
+  els.textInput.value = '';
+  pdfText = '';
+  els.pdfName.textContent = '';
+  els.pdfInput.value = '';
+  els.output.classList.remove('visible');
+  els.outputEmpty.style.display = '';
+  els.glowText.innerHTML = '';
+  els.stats.classList.remove('visible');
+  hideError();
+  els.status.textContent = '';
+}
+
+// ── Event listeners ──
+els.glowBtn.addEventListener('click', doGlow);
+els.clearBtn.addEventListener('click', doClear);
+els.vocabToggle.addEventListener('click', () => els.vocabPanel.classList.toggle('visible'));
+els.resetVocabBtn.addEventListener('click', () => {
+  if (confirm('确定要重置所有词汇记忆数据吗？')) {
+    localStorage.removeItem(VOCAB_KEY);
+    vocab = {};
+    updateVocabUI();
+  }
+});
+els.textInput.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    doGlow();
+  }
+});
+
+// ── Init ──
+loadVocab();
+</script>
+</body>
+</html>
