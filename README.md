@@ -15,8 +15,11 @@
 
 ```bash
 cd ~/dobby
+export DEEPSEEK_API_KEY="sk-..."   # 从 platform.deepseek.com 获取
 python3 server.py
 ```
+
+服务端只从环境变量读取 `DEEPSEEK_API_KEY`，密钥不会写入仓库。没有设置时，Glow 会返回一个明确的配置错误。
 
 ### Web App
 浏览器打开 `http://localhost:8848`

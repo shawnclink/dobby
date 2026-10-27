@@ -10,6 +10,7 @@ Usage:
 """
 
 import json
+import os
 import re
 import sys
 import time
@@ -22,7 +23,7 @@ ROOT = Path(__file__).resolve().parent
 INDEX = ROOT / "index.html"
 
 # ── DeepSeek API config ──────────────────────────────────
-API_KEY = "sk-81f9e3a203ba4ca78b6487602fa7f7be"
+API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip()
 API_URL = "https://api.deepseek.com/v1/chat/completions"
 MODEL = "deepseek-chat"
 
@@ -65,6 +66,11 @@ def build_user_prompt(text: str, known_words: list[str], level: str) -> str:
 
 def call_deepseek(text: str, known_words: list[str] | None = None, level: str = "intermediate") -> list[dict]:
     """调用 DeepSeek API，返回标注列表。"""
+    if not API_KEY:
+        raise RuntimeError(
+            "DEEPSEEK_API_KEY is not set. Export it before starting the server."
+        )
+
     known = known_words or []
     user_content = build_user_prompt(text, known, level)
 
